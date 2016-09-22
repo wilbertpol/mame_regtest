@@ -27,8 +27,11 @@ all: mame_regtest$(BIN_EXT) create_image_xml$(BIN_EXT) create_report$(BIN_EXT)
 clean:
 	rm -f *.o
 	rm -f mame_regtest$(BIN_EXT)
+	rm -r -f mame_regtest$(BIN_EXT).dSYM
 	rm -f create_image_xml$(BIN_EXT)
+	rm -r -f create_image_xml$(BIN_EXT).dSYM
 	rm -f create_report$(BIN_EXT)
+	rm -r -f create_report$(BIN_EXT).dSYM
 	
 create_image_xml$(BIN_EXT): create_image_xml.c common.c
 	$(CC) $(CFLAGS) $? $(LIBS) -o $@
