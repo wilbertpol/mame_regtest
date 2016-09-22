@@ -41,8 +41,8 @@
 #ifdef __MINGW32__
 #define IN_LIBXML
 #endif
-#include "libxml/parser.h"
-#include "libxml/xpath.h"
+#include <libxml/parser.h>
+#include <libxml/xpath.h>
 
 /* local */
 #include "common.h"
@@ -480,7 +480,7 @@ static void parse_callback(struct parse_callback_data* pcd)
 		xmlNodePtr filenode = xmlNewChild(*node, NULL, (const xmlChar*)"file", NULL);
 		xmlNewProp(filenode, (const xmlChar*)"name", (const xmlChar*)pcd->entry_name);
 		char tmp[128];
-		snprintf(tmp, sizeof(tmp), "%ld", pcd->s->st_size);
+		snprintf(tmp, sizeof(tmp), "%lld", pcd->s->st_size);
 		xmlNewProp(filenode, (const xmlChar*)"size", (const xmlChar*)tmp);
 
 		unsigned int crc = 0;

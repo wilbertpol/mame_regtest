@@ -1,0 +1,40 @@
+
+CC = gcc
+BIN_EXT = 
+
+INCLUDES = -I/usr/include/libxml2
+
+LIBS = -lxml2 -lz
+
+ifneq (,$(findstring clang,$(CC)))
+WARNINGS = -Weverything -Wno-padded -Wno-disabled-macro-expansion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-documentation-unknown-command -Wno-documentation -Wno-unused-variable
+else
+WARNINGS = -Wall -Wextra -Wformat=2 -Wshadow -Wcast-qual -Wwrite-strings -Wunreachable-code -Wno-shadow -Wno-unused-variable -Wno-cast-qual
+endif
+
+CFLAGS = $(WARNINGS) $(INCLUDES) -g -Werror
+
+ifndef DEBUG
+CFLAGS += -O3
+endif
+
+ifdef LOG_ALLOC
+CFLAGS += -DLOG_ALLOC
+endif
+
+all: mame_regtest$(BIN_EXT) create_image_xml$(BIN_EXT) create_report$(BIN_EXT)
+
+clean:
+	rm -f *.o
+	rm -f mame_regtest$(BIN_EXT)
+	rm -f create_image_xml$(BIN_EXT)
+	rm -f create_report$(BIN_EXT)
+	
+create_image_xml$(BIN_EXT): create_image_xml.c common.c
+	$(CC) $(CFLAGS) $? $(LIBS) -o $@
+
+create_report$(BIN_EXT): create_report.c common.c config.c
+	$(CC) $(CFLAGS) $? $(LIBS) -o $@
+
+mame_regtest$(BIN_EXT): mame_regtest.c common.c config.c
+	$(CC) $(CFLAGS) $? $(LIBS) -o $@
