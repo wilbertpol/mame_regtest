@@ -179,8 +179,7 @@ static const unsigned char MEND_name[4] = { 'M', 'E', 'N', 'D' };
 
 enum {
 	APP_UNKNOWN = 0,
-	APP_MAME 	= 1,
-	APP_MESS	= 2
+	APP_MAME 	= 1
 };
 
 /* configuration variables */
@@ -1154,7 +1153,7 @@ static char* create_commandline(struct driver_entry* de)
 			append_string(&sys, " -biospath "); /* old biospath for MESS */
 		append_quoted_string(&sys, config_rompath_folder);
 	}
-	if( (app_type == APP_MESS) && config_hashpath_folder && (*config_hashpath_folder != 0) )
+	if( config_hashpath_folder && (*config_hashpath_folder != 0) )
 	{
 		append_string(&sys, " -hashpath "); /* hashpath for MESS */
 		append_quoted_string(&sys, config_hashpath_folder);
@@ -2068,9 +2067,7 @@ static int parse_listxml_element_cfg(xmlNodePtr game_children, struct driver_inf
 
 static void parse_listxml_element(const xmlNodePtr game_child, struct driver_info** new_driv_inf)
 {
-	/* "game" in MAME and "machine" in MESS */
-	if( ((app_type == APP_MAME) && (xmlStrcmp(game_child->name, (const xmlChar*)"game") == 0)) ||
-		((app_type == APP_MESS) && (xmlStrcmp(game_child->name, (const xmlChar*)"machine") == 0)) ) {
+	if( xmlStrcmp(game_child->name, (const xmlChar*)"machine") == 0 ) {
 
 		if( !config_use_nonrunnable ) {
 			/* skip runnable="no" entries (bioses in MAME) */
@@ -2183,140 +2180,138 @@ static void parse_listxml_element(const xmlNodePtr game_child, struct driver_inf
 					goto next;
 			}
 
-			if( app_type == APP_MESS ) {
-				if( config_use_ramsize && (xmlStrcmp(game_children->name, (const xmlChar*)"ramoption") == 0) ) {
-					xmlChar* ram_content = xmlNodeGetContent(game_children);
-					if( ram_content ) {
-						(*new_driv_inf)->ramsizes[(*new_driv_inf)->ram_count++] = atoi((const char*)ram_content);
-						{
-							int i = 0;
-							for(; i < (*new_driv_inf)->ram_count-1; ++i)
-							{
-								if( (*new_driv_inf)->ramsizes[i] == (*new_driv_inf)->ramsizes[(*new_driv_inf)->ram_count] )
-									printf("%s - duplicated ramsize '%d' found\n", (const char*)(*new_driv_inf)->name, (*new_driv_inf)->ramsizes[i]);
-							}
-						}
-						xmlFree(ram_content);
-					}
-					xmlChar* ram_default = xmlGetProp(game_children, (const xmlChar*)"default");
-					if( ram_default ) {
-						if( xmlStrcmp(ram_default, (const xmlChar*)"1") == 0 )
-							(*new_driv_inf)->ram_default = (*new_driv_inf)->ram_count;
-						xmlFree(ram_default);
-					}
-					goto next;
-				}
-				
-				if( (config_use_devices || config_use_softwarelist) && xmlStrcmp(game_children->name, (const xmlChar*)"device") == 0 ) {
-					struct device_info* new_dev_info = (struct device_info*)malloc(sizeof(struct device_info));
-					/* TODO: check allocation */
-					memset(new_dev_info, 0x00, sizeof(struct device_info));
-
-					xmlChar* dev_man = xmlGetProp(game_children, (const xmlChar*)"mandatory");
-					if( dev_man ) {
-						new_dev_info->mandatory = 1;
-						xmlFree(dev_man);
-					}
-
-					xmlChar* dev_intf = xmlGetProp(game_children, (const xmlChar*)"interface");
-					if( dev_intf )
-						new_dev_info->interface = dev_intf;
-
-					xmlNodePtr dev_childs = game_children->children;
-					while( dev_childs != NULL ) {
-						if( xmlStrcmp(dev_childs->name, (const xmlChar*)"instance") == 0 ) {
-							xmlChar* dev_name = xmlGetProp(dev_childs, (const xmlChar*)"name");
-							if( dev_name )
-								new_dev_info->name = dev_name;
-
-							xmlChar* dev_brief = xmlGetProp(dev_childs, (const xmlChar*)"briefname");
-							if( dev_brief ) {
-								new_dev_info->briefname = dev_brief;
-								if( new_dev_info->mandatory )
-									(*new_driv_inf)->device_mandatory = xmlStrdup(dev_brief);
-							}
-							break;
-						}
-
-						dev_childs = dev_childs->next;
-					}
-					
-					if( (*new_driv_inf)->devices == NULL )
-						(*new_driv_inf)->devices = new_dev_info;
-					
-					if( last_dev_info )
-						last_dev_info->next = new_dev_info;
-					last_dev_info = new_dev_info;
-					
-					goto next;
-				}
-				/* TODO: add support for multiple softwarelist filters */
-				/* TODO: make the check for "original" a hack */
-				if( xmlStrcmp(game_children->name, (const xmlChar*)"softwarelist") == 0 /*&& xmlStrcmp(xmlGetProp(game_children, (const xmlChar*)"status"), (const xmlChar*)"original") == 0*/ ) {
-					/* TODO: hack to avoid memory leaks with multiple software lists */
-					if( (*new_driv_inf)->has_softlist == 0 ) {
-						(*new_driv_inf)->has_softlist = 1;
-						(*new_driv_inf)->softwarelist = xmlGetProp(game_children, (const xmlChar*)"name");
-						(*new_driv_inf)->softwarelist_filter = xmlGetProp(game_children, (const xmlChar*)"filter");
-					}
-					
-					goto next;
-				}
-				
-				if( config_use_slots && (xmlStrcmp(game_children->name, (const xmlChar*)"slot") == 0) ) {
-					struct slot_info* new_slot_info = (struct slot_info*)malloc(sizeof(struct slot_info));
-					/* TODO: check allocation */
-					memset(new_slot_info, 0x00, sizeof(struct slot_info));
-				
-					xmlChar* slot_name = xmlGetProp(game_children, (const xmlChar*)"name");
-					if( slot_name )
+			if( config_use_ramsize && (xmlStrcmp(game_children->name, (const xmlChar*)"ramoption") == 0) ) {
+				xmlChar* ram_content = xmlNodeGetContent(game_children);
+				if( ram_content ) {
+					(*new_driv_inf)->ramsizes[(*new_driv_inf)->ram_count++] = atoi((const char*)ram_content);
 					{
-						//printf("slot_name: %s\n", (const char*)slot_name);
-						new_slot_info->name = slot_name;
-					}
-					
-					xmlNodePtr slot_childs = game_children->children;
-					while( slot_childs != NULL ) {
-						xmlChar* slotoption_default = xmlGetProp(slot_childs, (const xmlChar*)"default");
-						if( slotoption_default ) {
-							//printf("slotoption_default: %s\n", (const char*)slotoption_default);
-							int def = 0;
-							if( xmlStrcmp(slotoption_default, (const xmlChar*)"yes") == 0 )
-								def = 1;
-							xmlFree(slotoption_default);
-							if( def == 1)
-							{
-								slot_childs = slot_childs->next;
-								continue;
-							}
-						}						
-						
-						xmlChar* slotoption_name = xmlGetProp(slot_childs, (const xmlChar*)"name");
-						if( slotoption_name )
+						int i = 0;
+						for(; i < (*new_driv_inf)->ram_count-1; ++i)
 						{
-							//printf("slotoption_name: %s\n", (const char*)slotoption_name);
-							new_slot_info->slotoptions[new_slot_info->slotoption_count++] = slotoption_name;
+							if( (*new_driv_inf)->ramsizes[i] == (*new_driv_inf)->ramsizes[(*new_driv_inf)->ram_count] )
+								printf("%s - duplicated ramsize '%d' found\n", (const char*)(*new_driv_inf)->name, (*new_driv_inf)->ramsizes[i]);
 						}
-					
-						slot_childs = slot_childs->next;
 					}
-					
-					if( new_slot_info->slotoptions[0] == NULL ) {
-						//printf("no non-default slotoptions\n");
-						free(new_slot_info);
-						new_slot_info = NULL;
-						goto next;
-					}
-					
-					if( (*new_driv_inf)->slots == NULL )
-						(*new_driv_inf)->slots = new_slot_info;
-					
-					if( last_slot_info )
-						last_slot_info->next = new_slot_info;
-					last_slot_info = new_slot_info;
+					xmlFree(ram_content);
+				}
+				xmlChar* ram_default = xmlGetProp(game_children, (const xmlChar*)"default");
+				if( ram_default ) {
+					if( xmlStrcmp(ram_default, (const xmlChar*)"1") == 0 )
+						(*new_driv_inf)->ram_default = (*new_driv_inf)->ram_count;
+					xmlFree(ram_default);
+				}
+				goto next;
+			}
 				
+			if( (config_use_devices || config_use_softwarelist) && xmlStrcmp(game_children->name, (const xmlChar*)"device") == 0 ) {
+				struct device_info* new_dev_info = (struct device_info*)malloc(sizeof(struct device_info));
+				/* TODO: check allocation */
+				memset(new_dev_info, 0x00, sizeof(struct device_info));
+
+				xmlChar* dev_man = xmlGetProp(game_children, (const xmlChar*)"mandatory");
+				if( dev_man ) {
+					new_dev_info->mandatory = 1;
+					xmlFree(dev_man);
+				}
+
+				xmlChar* dev_intf = xmlGetProp(game_children, (const xmlChar*)"interface");
+				if( dev_intf )
+					new_dev_info->interface = dev_intf;
+
+				xmlNodePtr dev_childs = game_children->children;
+				while( dev_childs != NULL ) {
+					if( xmlStrcmp(dev_childs->name, (const xmlChar*)"instance") == 0 ) {
+						xmlChar* dev_name = xmlGetProp(dev_childs, (const xmlChar*)"name");
+						if( dev_name )
+							new_dev_info->name = dev_name;
+
+						xmlChar* dev_brief = xmlGetProp(dev_childs, (const xmlChar*)"briefname");
+						if( dev_brief ) {
+							new_dev_info->briefname = dev_brief;
+							if( new_dev_info->mandatory )
+								(*new_driv_inf)->device_mandatory = xmlStrdup(dev_brief);
+						}
+						break;
+					}
+
+					dev_childs = dev_childs->next;
+				}
+					
+				if( (*new_driv_inf)->devices == NULL )
+					(*new_driv_inf)->devices = new_dev_info;
+					
+				if( last_dev_info )
+					last_dev_info->next = new_dev_info;
+				last_dev_info = new_dev_info;
+					
+				goto next;
+			}
+			/* TODO: add support for multiple softwarelist filters */
+			/* TODO: make the check for "original" a hack */
+			if( xmlStrcmp(game_children->name, (const xmlChar*)"softwarelist") == 0 /*&& xmlStrcmp(xmlGetProp(game_children, (const xmlChar*)"status"), (const xmlChar*)"original") == 0*/ ) {
+				/* TODO: hack to avoid memory leaks with multiple software lists */
+				if( (*new_driv_inf)->has_softlist == 0 ) {
+					(*new_driv_inf)->has_softlist = 1;
+					(*new_driv_inf)->softwarelist = xmlGetProp(game_children, (const xmlChar*)"name");
+					(*new_driv_inf)->softwarelist_filter = xmlGetProp(game_children, (const xmlChar*)"filter");
+				}
+				
+				goto next;
+			}
+				
+			if( config_use_slots && (xmlStrcmp(game_children->name, (const xmlChar*)"slot") == 0) ) {
+				struct slot_info* new_slot_info = (struct slot_info*)malloc(sizeof(struct slot_info));
+				/* TODO: check allocation */
+				memset(new_slot_info, 0x00, sizeof(struct slot_info));
+				
+				xmlChar* slot_name = xmlGetProp(game_children, (const xmlChar*)"name");
+				if( slot_name )
+				{
+					//printf("slot_name: %s\n", (const char*)slot_name);
+					new_slot_info->name = slot_name;
+				}
+					
+				xmlNodePtr slot_childs = game_children->children;
+				while( slot_childs != NULL ) {
+					xmlChar* slotoption_default = xmlGetProp(slot_childs, (const xmlChar*)"default");
+					if( slotoption_default ) {
+						//printf("slotoption_default: %s\n", (const char*)slotoption_default);
+						int def = 0;
+						if( xmlStrcmp(slotoption_default, (const xmlChar*)"yes") == 0 )
+							def = 1;
+						xmlFree(slotoption_default);
+						if( def == 1)
+						{
+							slot_childs = slot_childs->next;
+							continue;
+						}
+					}						
+						
+					xmlChar* slotoption_name = xmlGetProp(slot_childs, (const xmlChar*)"name");
+					if( slotoption_name )
+					{
+						//printf("slotoption_name: %s\n", (const char*)slotoption_name);
+						new_slot_info->slotoptions[new_slot_info->slotoption_count++] = slotoption_name;
+					}
+					
+					slot_childs = slot_childs->next;
+				}
+					
+				if( new_slot_info->slotoptions[0] == NULL ) {
+					//printf("no non-default slotoptions\n");
+					free(new_slot_info);
+					new_slot_info = NULL;
 					goto next;
 				}
+					
+				if( (*new_driv_inf)->slots == NULL )
+					(*new_driv_inf)->slots = new_slot_info;
+					
+				if( last_slot_info )
+					last_slot_info->next = new_slot_info;
+				last_slot_info = new_slot_info;
+				
+				goto next;
 			}
 
 			next:
@@ -2333,8 +2328,6 @@ static void parse_listxml(const char* filename, struct driver_info** driv_inf)
 		if( root ) {
 			if( xmlStrcmp(root->name, (const xmlChar*)"mame") == 0 )
 				app_type = APP_MAME;
-			else if( xmlStrcmp(root->name, (const xmlChar*)"mess") == 0 )
-				app_type = APP_MESS;
 			else
 				fprintf(stderr, "Unknown -listxml output\n");
 
@@ -2363,10 +2356,7 @@ static void parse_listxml(const char* filename, struct driver_info** driv_inf)
 					}
 				
 					char* real_xpath_expr = NULL;
-					if( app_type == APP_MAME )
-						replace_string(config_xpath_expr, &real_xpath_expr, xpath_placeholder, "/mame/game");
-					else if( app_type == APP_MESS )
-						replace_string(config_xpath_expr, &real_xpath_expr, xpath_placeholder, "/mess/machine");
+					replace_string(config_xpath_expr, &real_xpath_expr, xpath_placeholder, "/mame/machine");
 				
 					printf("using XPath expression: %s\n", real_xpath_expr);
 
@@ -2689,11 +2679,6 @@ int main(int argc, char *argv[])
 	clear_directory(temp_folder, 0);
 
 	printf("\n"); /* for output formating */
-	
-	/* set SDL dummy drivers to avoid stdout messages on Linux/Unix */
-	mrt_setenv("SDL_AUDIODRIVER", "dummy");
-	mrt_setenv("SDL_VIDEODRIVER", "dummy");
-	mrt_setenv("SDLMAME_DESKTOPDIM", "1024x768");
 	
 	if( config_test_frontend ) {
 		printf("testing frontend options\n");
