@@ -36,6 +36,15 @@
 		- sort group_data alphabetically
 */
 
+/* report types */
+enum {
+	RESULT_REPORT = 0,
+	COMPARISON_REPORT = 1,
+	SPEED_REPORT_OLD = 2,
+	TAGMAP_REPORT = 3,
+	SPEED_REPORT = 4
+};
+
 struct driver_data
 {
 	char* filename;
@@ -407,7 +416,7 @@ static int create_report_from_filename(const char *const filename, struct report
 	switch( r_cb_data->report_type )
 	{
 		default:
-		case 0:
+		case RESULT_REPORT:
 		{
 			xmlDocPtr doc = NULL;
 			{
@@ -569,7 +578,7 @@ static int create_report_from_filename(const char *const filename, struct report
 		}
 		break;
 		
-		case 1:
+		case COMPARISON_REPORT:
 		{
 			char* entry_name = get_filename(filename);
 			char* entry_directory = get_directory(filename);
@@ -693,7 +702,7 @@ static int create_report_from_filename(const char *const filename, struct report
 		}
 		break;
 		
-		case 2:
+		case SPEED_REPORT_OLD:
 		{
 			char* entry_name = get_filename(filename);
 			char* entry_directory = get_directory(filename);
@@ -792,7 +801,7 @@ static int create_report_from_filename(const char *const filename, struct report
 		}
 		break;
 		
-		case 3:
+		case TAGMAP_REPORT:
 		{
 			xmlDocPtr doc = NULL;
 			{
@@ -868,7 +877,7 @@ static int create_report_from_filename(const char *const filename, struct report
 		}
 		break;
 		
-		case 4:
+		case SPEED_REPORT:
 		{
 			xmlDocPtr doc = NULL;
 			{
